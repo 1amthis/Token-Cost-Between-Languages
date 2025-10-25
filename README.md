@@ -1,6 +1,10 @@
 # Token Cost Visualizer
 
+🌍 **[Live Demo on GitHub Pages](https://1amthis.github.io/Token-Cost-Between-Languages/)**
+
 A web application that compares token costs between different languages and English using GPT-4o mini for translation and the o200k tokenizer.
+
+![Token Visualizer Screenshot](https://via.placeholder.com/800x400?text=Token+Cost+Visualizer)
 
 ## Features
 
@@ -16,47 +20,47 @@ A web application that compares token costs between different languages and Engl
 
 ## How to Use
 
-### Important: Run from a Local Web Server
+### Option 1: Use GitHub Pages (Easiest!)
 
-**You MUST run this from a local web server, not by opening index.html directly!**
+Simply visit **[https://1amthis.github.io/Token-Cost-Between-Languages/](https://1amthis.github.io/Token-Cost-Between-Languages/)**
 
-This is required because the application uses ES6 modules which don't work with the `file://` protocol.
+No installation needed! Works directly in your browser.
 
-**Quick Start:**
+### Option 2: Run Locally
+
+If you want to run it locally:
 
 ```bash
-# Option 1: Use the included script
-./start-server.sh
+# Clone the repository
+git clone https://github.com/1amthis/Token-Cost-Between-Languages.git
+cd Token-Cost-Between-Languages
 
-# Option 2: Use Python directly
+# Start a local server (required for ES6 modules)
 python3 -m http.server 8000
-
-# Option 3: Use Node.js
-npx serve
+# OR
+./start-server.sh
 ```
 
 Then open your browser and go to: **http://localhost:8000**
 
-### Using the Application
+### Getting Started
 
-1. **Make sure you're running the local web server** (see above)
-
-2. **Enter your OpenAI API key**:
+1. **Get your OpenAI API key**:
    - Get an API key from [OpenAI Platform](https://platform.openai.com/api-keys)
    - Paste it in the "OpenAI API Key" field at the top
-   - The key is automatically saved in your browser's localStorage
+   - The key is stored **only in your browser** (localStorage) and never sent anywhere except OpenAI
    - You can click "Show/Hide" to toggle visibility
 
-3. **Enter your text**:
+2. **Enter your text**:
    - Type or paste text in any language (up to 500 characters)
-   - The token count updates automatically as you type
+   - Token count, word count, and token/word ratio update automatically
 
-4. **Translate**:
+3. **Translate**:
    - Click the "Translate" button (or press Shift+Enter)
    - GPT-4o mini will translate your text to English
    - Both texts are tokenized using the o200k tokenizer
 
-5. **Compare results**:
+4. **Compare results**:
    - View token counts for both original and translated text
    - See the token difference and percentage
    - Check which language is more token-efficient
