@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Token Cost Visualizer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-7xl">
+        <!-- Header -->
+        <header class="mb-8">
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">Token Cost Visualizer</h1>
+            <p class="text-gray-600">Compare token costs between different languages and English</p>
+        </header>
+
+        <!-- API Key Input -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <div class="flex items-center gap-4">
+                <label for="apiKey" class="text-sm font-medium text-gray-700 whitespace-nowrap">
+                    OpenAI API Key:
+                </label>
+                <input
+                    type="password"
+                    id="apiKey"
+                    placeholder="sk-..."
+                    class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                <button
+                    id="toggleKey"
+                    class="px-4 py-2 text-sm bg-gray-200 hover:bg-gray-300 rounded-lg transition"
+                >
+                    Show
+                </button>
+                <div id="keyStatus" class="text-sm"></div>
+            </div>
+            <p class="text-xs text-gray-500 mt-2">Your API key is stored locally in your browser and never sent anywhere except OpenAI.</p>
+        </div>
+
+        <!-- Main Comparison Panel -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <!-- Left Panel: Input Text -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-semibold text-gray-800">Original Text</h2>
+                    <span id="charCount" class="text-sm text-gray-600">0 / 500</span>
+                </div>
+                <textarea
+                    id="inputText"
+                    placeholder="Enter your text in any language (max 500 characters)..."
+                    maxlength="500"
+                    class="w-full h-64 p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                ></textarea>
+                <div class="mt-4 p-4 bg-blue-50 rounded-lg">
+                    <div class="grid grid-cols-3 gap-4 mb-3">
+                        <div>
+                            <div class="text-xs font-medium text-gray-600 mb-1">Tokens</div>
+                            <div id="originalTokens" class="text-xl font-bold text-blue-600">0</div>
+                        </div>
+                        <div>
+                            <div class="text-xs font-medium text-gray-600 mb-1">Words</div>
+                            <div id="originalWords" class="text-xl font-bold text-blue-600">0</div>
+                        </div>
+                        <div>
+                            <div class="text-xs font-medium text-gray-600 mb-1">Token/Word</div>
+                            <div id="originalRatio" class="text-xl font-bold text-blue-600">-</div>
+                        </div>
+                    </div>
+                    <div class="border-t border-blue-200 pt-3">
+                        <div class="text-xs font-medium text-gray-600 mb-2">Token Breakdown:</div>
+                        <div id="originalTokensDisplay" class="token-display">
+                            <span class="text-gray-400 italic">Tokens will appear here...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel: Translated Text -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-semibold text-gray-800">English Translation</h2>
+                    <button
+                        id="translateBtn"
+                        class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition disabled:bg-gray-300 disabled:cursor-not-allowed text-sm"
+                        disabled
+                    >
+                        Translate
+                    </button>
+                </div>
+                <div
+                    id="translatedText"
+                    class="w-full h-64 p-4 border border-gray-300 rounded-lg bg-gray-50 overflow-y-auto"
+                >
+                    <span class="text-gray-400 italic">Translation will appear here...</span>
+                </div>
+                <div class="mt-4 p-4 bg-green-50 rounded-lg">
+                    <div class="grid grid-cols-3 gap-4 mb-3">
+                        <div>
+                            <div class="text-xs font-medium text-gray-600 mb-1">Tokens</div>
+                            <div id="translatedTokens" class="text-xl font-bold text-green-600">0</div>
+                        </div>
+                        <div>
+                            <div class="text-xs font-medium text-gray-600 mb-1">Words</div>
+                            <div id="translatedWords" class="text-xl font-bold text-green-600">0</div>
+                        </div>
+                        <div>
+                            <div class="text-xs font-medium text-gray-600 mb-1">Token/Word</div>
+                            <div id="translatedRatio" class="text-xl font-bold text-green-600">-</div>
+                        </div>
+                    </div>
+                    <div class="border-t border-green-200 pt-3">
+                        <div class="text-xs font-medium text-gray-600 mb-2">Token Breakdown:</div>
+                        <div id="translatedTokensDisplay" class="token-display">
+                            <span class="text-gray-400 italic">Tokens will appear here...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Comparison Stats -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">Comparison</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="p-4 bg-purple-50 rounded-lg">
+                    <div class="text-sm font-medium text-gray-700 mb-1">Token Difference</div>
+                    <div id="tokenDiff" class="text-2xl font-bold text-purple-600">-</div>
+                </div>
+                <div class="p-4 bg-orange-50 rounded-lg">
+                    <div class="text-sm font-medium text-gray-700 mb-1">Token % Diff</div>
+                    <div id="percentDiff" class="text-2xl font-bold text-orange-600">-</div>
+                </div>
+                <div class="p-4 bg-teal-50 rounded-lg">
+                    <div class="text-sm font-medium text-gray-700 mb-1">Word Difference</div>
+                    <div id="wordDiff" class="text-2xl font-bold text-teal-600">-</div>
+                </div>
+                <div class="p-4 bg-indigo-50 rounded-lg">
+                    <div class="text-sm font-medium text-gray-700 mb-1">More Efficient</div>
+                    <div id="moreEfficient" class="text-2xl font-bold text-indigo-600">-</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading Indicator -->
+        <div id="loadingIndicator" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div class="bg-white rounded-lg p-6 flex items-center gap-4">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                <span class="text-gray-700">Translating...</span>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>
