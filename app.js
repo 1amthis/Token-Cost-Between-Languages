@@ -185,7 +185,7 @@ let currentTranslatedTokens = 0;
 let currentOriginalWords = 0;
 let currentTranslatedWords = 0;
 let translatedContent = '';
-let showGroupedView = true; // Toggle state for word grouping
+let showGroupedView = false; // Toggle state for word grouping (default: simple view)
 
 // Initialize - use both DOMContentLoaded and immediate execution to handle all cases
 function initApp() {
@@ -265,7 +265,7 @@ function setupEventListeners() {
         showGroupedView = !showGroupedView;
 
         // Update button text
-        toggleGroupViewBtn.textContent = showGroupedView ? 'Simple View' : 'Group Words';
+        toggleGroupViewBtn.textContent = showGroupedView ? 'Simple View' : 'Grouped View';
 
         // Re-render both token displays
         const originalText = inputText.value.trim();
@@ -407,6 +407,17 @@ function countTranslatedTokens() {
     }
 }
 
+// Helper function to escape HTML and visualize whitespace
+function escapeAndVisualizeToken(token) {
+    return token
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/ /g, '·')
+        .replace(/\n/g, '↵\n')
+        .replace(/\t/g, '→');
+}
+
 // Display tokens visually with color-coded boxes and word grouping
 function displayTokens(tokenStrings, container, wordMapping = []) {
     // Clear previous content
@@ -439,16 +450,19 @@ function displayTokens(tokenStrings, container, wordMapping = []) {
             const wordGroup = document.createElement('span');
             wordGroup.className = 'word-group';
 
-            // Add token count badge at the top
+            // Extract color name from the color class (e.g., 'bg-blue-100' -> 'blue')
+            const colorMatch = wordInfo.color.match(/bg-(\w+)-/);
+            const colorName = colorMatch ? colorMatch[1] : 'blue';
+
+            // Add token count badge on the top-right
             const badge = document.createElement('span');
-            badge.className = 'token-count-badge';
+            badge.className = `token-count-badge badge-${colorName}`;
             badge.textContent = wordInfo.tokenCount;
             badge.title = `"${wordInfo.word}" splits into ${wordInfo.tokenCount} tokens`;
-            wordGroup.appendChild(badge);
 
             // Create tokens container
             const tokensContainer = document.createElement('span');
-            tokensContainer.className = 'tokens-container';
+            tokensContainer.className = `tokens-container border-${colorName}`;
 
             // Add all tokens for this word
             wordInfo.tokenIndices.forEach((tokenIdx, posInWord) => {
@@ -457,22 +471,13 @@ function displayTokens(tokenStrings, container, wordMapping = []) {
                 const isLast = posInWord === wordInfo.tokenIndices.length - 1;
 
                 tokenSpan.className = `token-box grouped-token ${wordInfo.color} ${isFirst ? 'first-token' : ''} ${isLast ? 'last-token' : ''}`;
-
-                // Escape HTML and preserve whitespace
-                const displayText = tokenStrings[tokenIdx]
-                    .replace(/&/g, '&amp;')
-                    .replace(/</g, '&lt;')
-                    .replace(/>/g, '&gt;')
-                    .replace(/ /g, '·')
-                    .replace(/\n/g, '↵\n')
-                    .replace(/\t/g, '→');
-
-                tokenSpan.innerHTML = displayText;
+                tokenSpan.innerHTML = escapeAndVisualizeToken(tokenStrings[tokenIdx]);
                 tokenSpan.title = `Word: "${wordInfo.word}" (${wordInfo.tokenCount} tokens)\nToken ${posInWord + 1}/${wordInfo.tokenCount}: "${tokenStrings[tokenIdx]}"`;
 
                 tokensContainer.appendChild(tokenSpan);
             });
 
+            wordGroup.appendChild(badge);
             wordGroup.appendChild(tokensContainer);
             container.appendChild(wordGroup);
         }
@@ -482,25 +487,50 @@ function displayTokens(tokenStrings, container, wordMapping = []) {
         }
         // Single-token word or punctuation
         else {
-            const span = document.createElement('span');
             const colorClass = wordInfo ? wordInfo.color : colors[index % colors.length];
-            span.className = `token-box ${colorClass}`;
 
-            // Escape HTML and preserve whitespace
-            const displayText = token
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/ /g, '·')
-                .replace(/\n/g, '↵\n')
-                .replace(/\t/g, '→');
+            // In grouped view, wrap single tokens in same structure for alignment
+            if (wordMapping.length > 0) {
+                // Extract color name for consistency
+                const colorMatch = colorClass.match(/bg-(\w+)-/);
+                const colorName = colorMatch ? colorMatch[1] : 'blue';
 
-            span.innerHTML = displayText;
-            span.title = wordInfo
-                ? `Word: "${wordInfo.word}" (1 token)`
-                : `Token ${index + 1}: "${token}"`;
+                // Wrap single tokens in the same structure for alignment
+                const wordGroup = document.createElement('span');
+                wordGroup.className = 'word-group';
 
-            container.appendChild(span);
+                // Add invisible badge for alignment (but don't display it)
+                const badge = document.createElement('span');
+                badge.className = 'token-count-badge badge-invisible';
+                badge.innerHTML = '&nbsp;'; // Non-breaking space to maintain height
+
+                // Create container for single token
+                const tokensContainer = document.createElement('span');
+                tokensContainer.className = `tokens-container border-invisible`;
+
+                const span = document.createElement('span');
+                span.className = `token-box grouped-token ${colorClass}`;
+                span.innerHTML = escapeAndVisualizeToken(token);
+                span.title = wordInfo
+                    ? `Word: "${wordInfo.word}" (1 token)`
+                    : `Token ${index + 1}: "${token}"`;
+
+                tokensContainer.appendChild(span);
+                wordGroup.appendChild(badge);
+                wordGroup.appendChild(tokensContainer);
+                container.appendChild(wordGroup);
+            }
+            // In simple view, use simple token boxes
+            else {
+                const span = document.createElement('span');
+                span.className = `token-box ${colorClass}`;
+                span.innerHTML = escapeAndVisualizeToken(token);
+                span.title = wordInfo
+                    ? `Word: "${wordInfo.word}" (1 token)`
+                    : `Token ${index + 1}: "${token}"`;
+
+                container.appendChild(span);
+            }
         }
     });
 }
