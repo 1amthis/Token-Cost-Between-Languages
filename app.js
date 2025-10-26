@@ -10,7 +10,7 @@ import { francAll } from 'https://esm.sh/franc-min@6.2.0';
 console.log('✓ Tokenizer module loaded');
 console.log('✓ Language detection module loaded');
 
-// Helper function to get individual token strings
+// Helper function to get individual token strings with word mapping
 function encodeAndSplit(text) {
     const tokens = encode(text);
     const tokenStrings = [];
@@ -20,7 +20,58 @@ function encodeAndSplit(text) {
         tokenStrings.push(tokenText);
     }
 
-    return { tokens, tokenStrings };
+    // Map tokens to words
+    const wordMapping = mapTokensToWords(text, tokenStrings);
+
+    return { tokens, tokenStrings, wordMapping };
+}
+
+// Map tokens to their corresponding words
+function mapTokensToWords(originalText, tokenStrings) {
+    const words = [];
+    let charPosition = 0;
+    let tokenIndex = 0;
+
+    // Split text into words (by whitespace and punctuation boundaries)
+    const wordRegex = /\S+/g;
+    let match;
+
+    while ((match = wordRegex.exec(originalText)) !== null) {
+        const word = match[0];
+        const wordStart = match.index;
+        const wordEnd = wordStart + word.length;
+
+        // Find which tokens belong to this word
+        const wordTokens = [];
+        let reconstructed = '';
+        const startTokenIndex = tokenIndex;
+
+        // Keep adding tokens until we've covered this word
+        while (tokenIndex < tokenStrings.length && charPosition < wordEnd) {
+            const token = tokenStrings[tokenIndex];
+            wordTokens.push(tokenIndex);
+            reconstructed += token;
+            charPosition += token.length;
+            tokenIndex++;
+
+            // If we've covered the word, break
+            if (charPosition >= wordEnd) {
+                break;
+            }
+        }
+
+        if (wordTokens.length > 0) {
+            words.push({
+                word: word,
+                tokenIndices: wordTokens,
+                tokenCount: wordTokens.length,
+                startPos: wordStart,
+                endPos: wordEnd
+            });
+        }
+    }
+
+    return words;
 }
 
 // Helper function to count words
@@ -126,6 +177,7 @@ const originalRatioSpan = document.getElementById('originalRatio');
 const translatedRatioSpan = document.getElementById('translatedRatio');
 const detectedLanguageSpan = document.getElementById('detectedLanguage');
 const targetLanguageSelect = document.getElementById('targetLanguage');
+const toggleGroupViewBtn = document.getElementById('toggleGroupView');
 
 // State
 let currentOriginalTokens = 0;
@@ -133,6 +185,7 @@ let currentTranslatedTokens = 0;
 let currentOriginalWords = 0;
 let currentTranslatedWords = 0;
 let translatedContent = '';
+let showGroupedView = true; // Toggle state for word grouping
 
 // Initialize - use both DOMContentLoaded and immediate execution to handle all cases
 function initApp() {
@@ -207,6 +260,26 @@ function setupEventListeners() {
     // Translate button
     translateBtn.addEventListener('click', translateText);
 
+    // Toggle group view button
+    toggleGroupViewBtn.addEventListener('click', () => {
+        showGroupedView = !showGroupedView;
+
+        // Update button text
+        toggleGroupViewBtn.textContent = showGroupedView ? 'Simple View' : 'Group Words';
+
+        // Re-render both token displays
+        const originalText = inputText.value.trim();
+        if (originalText) {
+            const result = encodeAndSplit(originalText);
+            displayTokens(result.tokenStrings, originalTokensDisplay, showGroupedView ? result.wordMapping : []);
+        }
+
+        if (translatedContent) {
+            const result = encodeAndSplit(translatedContent);
+            displayTokens(result.tokenStrings, translatedTokensDisplay, showGroupedView ? result.wordMapping : []);
+        }
+    });
+
     // Enter key in input (Shift+Enter for translate)
     inputText.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && e.shiftKey) {
@@ -268,8 +341,9 @@ function countOriginalTokens() {
             originalRatioSpan.textContent = '-';
         }
 
-        // Display visual token breakdown
-        displayTokens(tokenStrings, originalTokensDisplay);
+        // Display visual token breakdown with word grouping (if enabled)
+        const result = encodeAndSplit(text);
+        displayTokens(result.tokenStrings, originalTokensDisplay, showGroupedView ? result.wordMapping : []);
 
         updateComparison();
     } catch (error) {
@@ -317,8 +391,9 @@ function countTranslatedTokens() {
             translatedRatioSpan.textContent = '-';
         }
 
-        // Display visual token breakdown
-        displayTokens(tokenStrings, translatedTokensDisplay);
+        // Display visual token breakdown with word grouping (if enabled)
+        const result = encodeAndSplit(translatedContent);
+        displayTokens(result.tokenStrings, translatedTokensDisplay, showGroupedView ? result.wordMapping : []);
 
         updateComparison();
     } catch (error) {
@@ -332,12 +407,12 @@ function countTranslatedTokens() {
     }
 }
 
-// Display tokens visually with color-coded boxes
-function displayTokens(tokenStrings, container) {
+// Display tokens visually with color-coded boxes and word grouping
+function displayTokens(tokenStrings, container, wordMapping = []) {
     // Clear previous content
     container.innerHTML = '';
 
-    // Color palette for tokens
+    // Color palette for word groups
     const colors = [
         'bg-blue-100 border-blue-300 text-blue-800',
         'bg-green-100 border-green-300 text-green-800',
@@ -347,24 +422,86 @@ function displayTokens(tokenStrings, container) {
         'bg-indigo-100 border-indigo-300 text-indigo-800',
     ];
 
+    // Create a map of tokenIndex -> wordInfo
+    const tokenToWord = new Map();
+    wordMapping.forEach((wordInfo, wordIndex) => {
+        wordInfo.tokenIndices.forEach(tokenIdx => {
+            tokenToWord.set(tokenIdx, { ...wordInfo, wordIndex, color: colors[wordIndex % colors.length] });
+        });
+    });
+
     tokenStrings.forEach((token, index) => {
-        const span = document.createElement('span');
-        const colorClass = colors[index % colors.length];
-        span.className = `token-box ${colorClass}`;
+        const wordInfo = tokenToWord.get(index);
+        const isMultiToken = wordInfo && wordInfo.tokenCount > 1;
 
-        // Escape HTML and preserve whitespace
-        const displayText = token
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/ /g, '·')  // Show spaces as middle dots
-            .replace(/\n/g, '↵\n')  // Show newlines
-            .replace(/\t/g, '→');  // Show tabs
+        // Create word group container if this is the first token of a multi-token word
+        if (wordInfo && wordInfo.tokenIndices[0] === index && isMultiToken) {
+            const wordGroup = document.createElement('span');
+            wordGroup.className = 'word-group';
 
-        span.innerHTML = displayText;
-        span.title = `Token ${index + 1}: "${token}"`;
+            // Add token count badge at the top
+            const badge = document.createElement('span');
+            badge.className = 'token-count-badge';
+            badge.textContent = wordInfo.tokenCount;
+            badge.title = `"${wordInfo.word}" splits into ${wordInfo.tokenCount} tokens`;
+            wordGroup.appendChild(badge);
 
-        container.appendChild(span);
+            // Create tokens container
+            const tokensContainer = document.createElement('span');
+            tokensContainer.className = 'tokens-container';
+
+            // Add all tokens for this word
+            wordInfo.tokenIndices.forEach((tokenIdx, posInWord) => {
+                const tokenSpan = document.createElement('span');
+                const isFirst = posInWord === 0;
+                const isLast = posInWord === wordInfo.tokenIndices.length - 1;
+
+                tokenSpan.className = `token-box grouped-token ${wordInfo.color} ${isFirst ? 'first-token' : ''} ${isLast ? 'last-token' : ''}`;
+
+                // Escape HTML and preserve whitespace
+                const displayText = tokenStrings[tokenIdx]
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/ /g, '·')
+                    .replace(/\n/g, '↵\n')
+                    .replace(/\t/g, '→');
+
+                tokenSpan.innerHTML = displayText;
+                tokenSpan.title = `Word: "${wordInfo.word}" (${wordInfo.tokenCount} tokens)\nToken ${posInWord + 1}/${wordInfo.tokenCount}: "${tokenStrings[tokenIdx]}"`;
+
+                tokensContainer.appendChild(tokenSpan);
+            });
+
+            wordGroup.appendChild(tokensContainer);
+            container.appendChild(wordGroup);
+        }
+        // Skip if this token is part of a multi-token word (already rendered above)
+        else if (wordInfo && wordInfo.tokenIndices[0] !== index && isMultiToken) {
+            return;
+        }
+        // Single-token word or punctuation
+        else {
+            const span = document.createElement('span');
+            const colorClass = wordInfo ? wordInfo.color : colors[index % colors.length];
+            span.className = `token-box ${colorClass}`;
+
+            // Escape HTML and preserve whitespace
+            const displayText = token
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/ /g, '·')
+                .replace(/\n/g, '↵\n')
+                .replace(/\t/g, '→');
+
+            span.innerHTML = displayText;
+            span.title = wordInfo
+                ? `Word: "${wordInfo.word}" (1 token)`
+                : `Token ${index + 1}: "${token}"`;
+
+            container.appendChild(span);
+        }
     });
 }
 
