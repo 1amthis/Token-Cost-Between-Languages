@@ -43,7 +43,10 @@
             <!-- Left Panel: Input Text -->
             <div class="bg-white rounded-lg shadow-md p-6">
                 <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-xl font-semibold text-gray-800">Original Text</h2>
+                    <div class="flex items-center gap-2">
+                        <h2 class="text-xl font-semibold text-gray-800">Original Text</h2>
+                        <span id="detectedLanguage" class="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded-full hidden"></span>
+                    </div>
                     <span id="charCount" class="text-sm text-gray-600">0 / 500</span>
                 </div>
                 <textarea
@@ -79,7 +82,31 @@
             <!-- Right Panel: Translated Text -->
             <div class="bg-white rounded-lg shadow-md p-6">
                 <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-xl font-semibold text-gray-800">English Translation</h2>
+                    <div class="flex items-center gap-3">
+                        <h2 class="text-xl font-semibold text-gray-800">Translation</h2>
+                        <select
+                            id="targetLanguage"
+                            class="px-3 py-1 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        >
+                            <option value="English">English</option>
+                            <option value="Spanish">Spanish</option>
+                            <option value="French">French</option>
+                            <option value="German">German</option>
+                            <option value="Chinese">Chinese</option>
+                            <option value="Japanese">Japanese</option>
+                            <option value="Korean">Korean</option>
+                            <option value="Arabic">Arabic</option>
+                            <option value="Russian">Russian</option>
+                            <option value="Portuguese">Portuguese</option>
+                            <option value="Italian">Italian</option>
+                            <option value="Dutch">Dutch</option>
+                            <option value="Hindi">Hindi</option>
+                            <option value="Turkish">Turkish</option>
+                            <option value="Polish">Polish</option>
+                            <option value="Swedish">Swedish</option>
+                            <option value="Norwegian">Norwegian</option>
+                        </select>
+                    </div>
                     <button
                         id="translateBtn"
                         class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition disabled:bg-gray-300 disabled:cursor-not-allowed text-sm"

@@ -8,7 +8,9 @@ A web application that compares token costs between different languages and Engl
 
 ## Features
 
-- **Side-by-side comparison**: Input text in any language and see the English translation
+- **Language Detection**: Automatic detection of input text language (supports 80+ languages)
+- **Multi-Language Translation**: Translate to any of 17 popular languages (English, Spanish, French, German, Chinese, Japanese, Korean, Arabic, Russian, Portuguese, Italian, Dutch, Hindi, Turkish, Polish, Swedish, Norwegian)
+- **Side-by-side comparison**: Input text in any language and see the translation
 - **Real-time token counting**: Uses the o200k tokenizer (same as GPT-4o) to count tokens
 - **Character limit**: Maximum 500 characters per input
 - **Comparison metrics**:
@@ -54,21 +56,27 @@ Then open your browser and go to: **http://localhost:8000**
 2. **Enter your text**:
    - Type or paste text in any language (up to 500 characters)
    - Token count, word count, and token/word ratio update automatically
+   - Language is automatically detected and displayed (requires 10+ characters)
 
-3. **Translate**:
+3. **Select target language**:
+   - Choose your desired translation language from the dropdown menu
+   - Options include English, Spanish, French, German, Chinese, Japanese, and more
+
+4. **Translate**:
    - Click the "Translate" button (or press Shift+Enter)
-   - GPT-4o mini will translate your text to English
+   - GPT-4o mini will translate your text to the selected language
    - Both texts are tokenized using the o200k tokenizer
 
-4. **Compare results**:
+5. **Compare results**:
    - View token counts for both original and translated text
    - See the token difference and percentage
    - Check which language is more token-efficient
 
 ## Technical Details
 
+- **Language Detection**: Uses franc-min library (client-side, free)
 - **Translation**: Uses OpenAI's GPT-4o mini model
-- **Tokenization**: Uses the o200k tokenizer via `@dqbd/tiktoken`
+- **Tokenization**: Uses the o200k tokenizer via gpt-tokenizer library
 - **Frontend**: Pure HTML/CSS/JavaScript (no build step required)
 - **Styling**: Tailwind CSS via CDN
 - **No backend**: All processing happens in your browser

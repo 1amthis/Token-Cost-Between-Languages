@@ -3,8 +3,12 @@
 // Import gpt-tokenizer for o200k encoding (browser-compatible)
 import { encode, decode } from 'https://esm.sh/gpt-tokenizer@2.1.1';
 
-// Tokenizer is ready to use
+// Import franc-min for language detection (browser-compatible)
+import { francAll } from 'https://esm.sh/franc-min@6.2.0';
+
+// Modules are ready to use
 console.log('✓ Tokenizer module loaded');
+console.log('✓ Language detection module loaded');
 
 // Helper function to get individual token strings
 function encodeAndSplit(text) {
@@ -33,6 +37,72 @@ function countWords(text) {
     return words.filter(word => word.length > 0).length;
 }
 
+// Detect language of text using franc-min
+function detectLanguage(text) {
+    if (!text || text.trim().length < 10) {
+        // Need at least 10 characters for reliable detection
+        detectedLanguageSpan.classList.add('hidden');
+        return null;
+    }
+
+    try {
+        // francAll returns array of [language, confidence] pairs
+        const results = francAll(text, { minLength: 10 });
+
+        if (results.length > 0 && results[0][0] !== 'und') {
+            const langCode = results[0][0];
+            const langName = LANGUAGE_NAMES[langCode] || langCode.toUpperCase();
+
+            // Display detected language
+            detectedLanguageSpan.textContent = `Detected: ${langName}`;
+            detectedLanguageSpan.classList.remove('hidden');
+
+            return langName;
+        } else {
+            // Unknown language
+            detectedLanguageSpan.classList.add('hidden');
+            return null;
+        }
+    } catch (error) {
+        console.error('Language detection error:', error);
+        detectedLanguageSpan.classList.add('hidden');
+        return null;
+    }
+}
+
+// Language code to name mapping for franc-min
+const LANGUAGE_NAMES = {
+    'eng': 'English',
+    'spa': 'Spanish',
+    'fra': 'French',
+    'deu': 'German',
+    'cmn': 'Chinese',
+    'jpn': 'Japanese',
+    'kor': 'Korean',
+    'ara': 'Arabic',
+    'rus': 'Russian',
+    'por': 'Portuguese',
+    'ita': 'Italian',
+    'nld': 'Dutch',
+    'hin': 'Hindi',
+    'tur': 'Turkish',
+    'pol': 'Polish',
+    'swe': 'Swedish',
+    'nor': 'Norwegian',
+    'vie': 'Vietnamese',
+    'tha': 'Thai',
+    'heb': 'Hebrew',
+    'cat': 'Catalan',
+    'ces': 'Czech',
+    'dan': 'Danish',
+    'fin': 'Finnish',
+    'ell': 'Greek',
+    'hun': 'Hungarian',
+    'ind': 'Indonesian',
+    'ron': 'Romanian',
+    'ukr': 'Ukrainian'
+};
+
 // DOM Elements
 const apiKeyInput = document.getElementById('apiKey');
 const toggleKeyBtn = document.getElementById('toggleKey');
@@ -54,6 +124,8 @@ const originalWordsSpan = document.getElementById('originalWords');
 const translatedWordsSpan = document.getElementById('translatedWords');
 const originalRatioSpan = document.getElementById('originalRatio');
 const translatedRatioSpan = document.getElementById('translatedRatio');
+const detectedLanguageSpan = document.getElementById('detectedLanguage');
+const targetLanguageSelect = document.getElementById('targetLanguage');
 
 // State
 let currentOriginalTokens = 0;
@@ -128,6 +200,7 @@ function setupEventListeners() {
     inputText.addEventListener('input', () => {
         updateCharCount();
         countOriginalTokens();
+        detectLanguage(inputText.value);
         updateTranslateButton();
     });
 
@@ -332,11 +405,12 @@ function updateComparison() {
 
     // More efficient language
     if (currentTranslatedTokens > 0 && currentOriginalTokens > 0) {
+        const targetLanguage = targetLanguageSelect.value;
         if (currentOriginalTokens < currentTranslatedTokens) {
             moreEfficientSpan.textContent = 'Original';
             moreEfficientSpan.style.color = '#2563eb'; // Blue
         } else if (currentTranslatedTokens < currentOriginalTokens) {
-            moreEfficientSpan.textContent = 'English';
+            moreEfficientSpan.textContent = targetLanguage;
             moreEfficientSpan.style.color = '#10b981'; // Green
         } else {
             moreEfficientSpan.textContent = 'Equal';
@@ -360,6 +434,7 @@ function updateTranslateButton() {
 async function translateText() {
     const apiKey = apiKeyInput.value.trim();
     const text = inputText.value.trim();
+    const targetLanguage = targetLanguageSelect.value;
 
     if (!apiKey || !text) {
         return;
@@ -381,7 +456,7 @@ async function translateText() {
                 messages: [
                     {
                         role: 'system',
-                        content: 'You are a professional translator. Translate the following text to English. If the text is already in English, return it as is. Only return the translation, no explanations or additional text.'
+                        content: `You are a professional translator. Translate the following text to ${targetLanguage}. If the text is already in ${targetLanguage}, return it as is. Only return the translation, no explanations or additional text.`
                     },
                     {
                         role: 'user',
