@@ -1,17 +1,37 @@
 // Token Visualizer - Main Application Logic
 
-// Import gpt-tokenizer for o200k encoding (browser-compatible)
-import { encode, decode } from 'https://esm.sh/gpt-tokenizer@2.1.1';
+// Import all three tokenizer encodings (browser-compatible)
+import { encode as encode_o200k, decode as decode_o200k } from 'https://esm.sh/gpt-tokenizer@2.1.1/encoding/o200k_base';
+import { encode as encode_cl100k, decode as decode_cl100k } from 'https://esm.sh/gpt-tokenizer@2.1.1/encoding/cl100k_base';
+import { encode as encode_p50k, decode as decode_p50k } from 'https://esm.sh/gpt-tokenizer@2.1.1/encoding/p50k_base';
 
 // Import franc-min for language detection (browser-compatible)
 import { francAll } from 'https://esm.sh/franc-min@6.2.0';
 
 // Modules are ready to use
-console.log('✓ Tokenizer module loaded');
+console.log('✓ Tokenizer modules loaded (o200k, cl100k, p50k)');
 console.log('✓ Language detection module loaded');
+
+// Current tokenizer state
+let currentTokenizer = 'o200k_base';
+
+// Get encode/decode functions for current tokenizer
+function getTokenizerFunctions() {
+    switch (currentTokenizer) {
+        case 'o200k_base':
+            return { encode: encode_o200k, decode: decode_o200k };
+        case 'cl100k_base':
+            return { encode: encode_cl100k, decode: decode_cl100k };
+        case 'p50k_base':
+            return { encode: encode_p50k, decode: decode_p50k };
+        default:
+            return { encode: encode_o200k, decode: decode_o200k };
+    }
+}
 
 // Helper function to get individual token strings with word mapping
 function encodeAndSplit(text) {
+    const { encode, decode } = getTokenizerFunctions();
     const tokens = encode(text);
     const tokenStrings = [];
 
@@ -178,6 +198,7 @@ const translatedRatioSpan = document.getElementById('translatedRatio');
 const detectedLanguageSpan = document.getElementById('detectedLanguage');
 const targetLanguageSelect = document.getElementById('targetLanguage');
 const toggleGroupViewBtn = document.getElementById('toggleGroupView');
+const tokenizerSelect = document.getElementById('tokenizerSelect');
 
 // State
 let currentOriginalTokens = 0;
@@ -190,6 +211,7 @@ let showGroupedView = false; // Toggle state for word grouping (default: simple 
 // Initialize - use both DOMContentLoaded and immediate execution to handle all cases
 function initApp() {
     loadApiKey();
+    loadTokenizer();
     setupEventListeners();
 }
 
@@ -208,6 +230,16 @@ function loadApiKey() {
         updateKeyStatus(true);
         updateTranslateButton();
     }
+}
+
+// Load tokenizer preference from localStorage
+function loadTokenizer() {
+    const savedTokenizer = localStorage.getItem('selected_tokenizer');
+    if (savedTokenizer && ['o200k_base', 'cl100k_base', 'p50k_base'].includes(savedTokenizer)) {
+        currentTokenizer = savedTokenizer;
+        tokenizerSelect.value = savedTokenizer;
+    }
+    console.log(`✓ Using tokenizer: ${currentTokenizer}`);
 }
 
 // Save API key to localStorage
@@ -287,6 +319,24 @@ function setupEventListeners() {
             if (!translateBtn.disabled) {
                 translateText();
             }
+        }
+    });
+
+    // Tokenizer selection change
+    tokenizerSelect.addEventListener('change', () => {
+        const newTokenizer = tokenizerSelect.value;
+        currentTokenizer = newTokenizer;
+        localStorage.setItem('selected_tokenizer', newTokenizer);
+        console.log(`✓ Switched to tokenizer: ${currentTokenizer}`);
+
+        // Re-tokenize original text
+        if (inputText.value.trim()) {
+            countOriginalTokens();
+        }
+
+        // Re-tokenize translated text
+        if (translatedContent) {
+            countTranslatedTokens();
         }
     });
 }
@@ -669,7 +719,10 @@ async function translateText() {
 
 // Export for debugging
 window.debugTokens = () => {
+    console.log('Current tokenizer:', currentTokenizer);
     console.log('Original tokens:', currentOriginalTokens);
     console.log('Translated tokens:', currentTranslatedTokens);
+    const { encode, decode } = getTokenizerFunctions();
     console.log('Encode function available:', typeof encode === 'function');
+    console.log('Decode function available:', typeof decode === 'function');
 };

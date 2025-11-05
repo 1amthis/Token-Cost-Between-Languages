@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Token Cost Visualizer is a client-side web application that compares token costs between different languages using GPT-4o mini for translation and the o200k tokenizer (GPT-4o's tokenizer). Features automatic language detection and multi-language translation support.
+Token Cost Visualizer is a client-side web application that compares token costs between different languages using GPT-4o mini for translation. Users can select between three tokenizers (o200k_base for GPT-4o, cl100k_base for GPT-4/3.5, or p50k_base for older models). Features automatic language detection and multi-language translation support.
 
 **Live deployment**: https://1amthis.github.io/Token-Cost-Between-Languages/
 
@@ -24,10 +24,14 @@ This is a pure frontend application with no build process:
 - Language codes (ISO 639-3) mapped to readable names via `LANGUAGE_NAMES` constant
 - Detection runs automatically on input change
 
-**Tokenization**: Uses `gpt-tokenizer@2.1.1` library imported via ESM CDN (https://esm.sh) for o200k encoding. The tokenizer provides:
-- `encode(text)`: Returns array of token IDs
-- `decode([tokenId])`: Converts token ID back to string
-- `encodeAndSplit()` helper in app.js combines these for visual token display
+**Tokenization**: Uses `gpt-tokenizer@2.1.1` library imported via ESM CDN (https://esm.sh) with support for three encodings:
+- **o200k_base**: For GPT-4o and newer models (default)
+- **cl100k_base**: For GPT-4 and GPT-3.5-turbo
+- **p50k_base**: For older models like text-davinci-002
+- User selection stored in localStorage and persists across sessions
+- Each encoding provides `encode(text)` and `decode([tokenId])` functions
+- `encodeAndSplit()` helper in app.js uses selected tokenizer for visual token display
+- Switching tokenizers re-tokenizes all current text automatically
 
 **Translation**: Direct browser-to-OpenAI API calls using fetch() to `https://api.openai.com/v1/chat/completions` with gpt-4o-mini model:
 - Target language selected via dropdown (17 popular languages)
@@ -35,11 +39,14 @@ This is a pure frontend application with no build process:
 - Translation works bidirectionally (any language to any language)
 
 **State Management**: Simple global state variables in app.js:
+- `currentTokenizer`: Selected tokenizer encoding ('o200k_base', 'cl100k_base', or 'p50k_base')
 - `currentOriginalTokens`, `currentTranslatedTokens`: Token counts
 - `currentOriginalWords`, `currentTranslatedWords`: Word counts
 - `translatedContent`: Cached translation result
 
 **API Key Storage**: OpenAI API key is stored in browser localStorage, never sent anywhere except OpenAI's servers.
+
+**Tokenizer Selection**: Selected tokenizer stored in localStorage as 'selected_tokenizer', loads on page initialization.
 
 ## Development Commands
 

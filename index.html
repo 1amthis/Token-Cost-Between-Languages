@@ -12,7 +12,20 @@
         <!-- Header -->
         <header class="mb-8">
             <h1 class="text-4xl font-bold text-gray-800 mb-2">Token Cost Visualizer</h1>
-            <p class="text-gray-600">Compare token costs between different languages and English</p>
+            <div class="flex items-center gap-4 flex-wrap">
+                <p class="text-gray-600">Compare token costs between different languages and English</p>
+                <div class="flex items-center gap-2">
+                    <label for="tokenizerSelect" class="text-sm font-medium text-gray-700">Tokenizer:</label>
+                    <select
+                        id="tokenizerSelect"
+                        class="px-3 py-1 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                    >
+                        <option value="o200k_base" selected>o200k_base (GPT-4o)</option>
+                        <option value="cl100k_base">cl100k_base (GPT-4/3.5)</option>
+                        <option value="p50k_base">p50k_base (older models)</option>
+                    </select>
+                </div>
+            </div>
         </header>
 
         <!-- API Key Input -->
